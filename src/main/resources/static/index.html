@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Encolamiento RabbitMQ</title>
+
+    <style>
+        :root {
+            --size-s: 8px;
+            --size-m: 16px;
+            --color-accent: rgb(56, 124, 212);
+            --border-radius: 8px;
+            --color-border: #ffffff70;
+            --color-panel: #ffffff15;
+
+            font-family: sans-serif;
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,
+                    minmax(min(100%, 280px), 1fr));
+            gap: var(--size-m);
+            padding: var(--size-m);
+            align-items: start;
+        }
+
+        details {
+            user-select: none;
+            min-width: 0;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            padding: var(--size-m);
+            background-color: var(--color-panel);
+        }
+
+        summary {
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            list-style-position: inside;
+        }
+
+        details[open] summary {
+            margin-bottom: var(--size-m);
+        }
+
+
+        form {
+            min-width: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: var(--size-m);
+        }
+
+        input,
+        select {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            margin-top: var(--size-s);
+            padding: var(--size-s);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font: inherit;
+        }
+
+        .quantity_input {
+            display: flex;
+            align-items: center;
+            gap: var(--size-s);
+            margin-top: var(--size-s);
+            width: 100%;
+        }
+
+        .quantity_input button {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .quantity_input input {
+            flex: 1;
+            width: 0;
+            min-width: 0;
+            margin: 0;
+            text-align: center;
+        }
+
+        button {
+            padding: var(--size-s);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        button:hover {
+            outline: 2px solid white;
+            outline-offset: 4px;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            border: none;
+            background-color: var(--color-accent);
+            margin-top: var(--size-s);
+        }
+
+        .description {
+            color: #aaa;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .status {
+            grid-column: 1 / -1;
+            padding: var(--size-s) var(--size-m);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+
+
+        <!-- CREAR PEDIDO -->
+        <details open>
+            <summary>Crear pedido</summary>
+
+            <form id="form-pedido">
+                <label for="nombre-cliente">
+                    Nombre del cliente
+                    <input type="text" id="nombre-cliente" name="nombreCliente" placeholder="Ej. Juan Pérez" required>
+                </label>
+
+                <label for="articulo">
+                    Producto
+                    <select id="articulo" name="articulo" required>
+                        <option value="" disabled selected>
+                            Selecciona un producto
+                        </option>
+                        <option value="teclado">Teclado</option>
+                        <option value="raton">Ratón</option>
+                        <option value="monitor">Monitor</option>
+                        <option value="auriculares">Auriculares</option>
+                    </select>
+                </label>
+
+                <label for="cantidad">
+                    Cantidad
+                    <div class="quantity_input">
+                        <button type="button" id="restar" aria-label="Disminuir cantidad">-</button>
+
+                        <input type="number" id="cantidad" name="cantidad" value="1" min="1" step="1" required>
+
+                        <button type="button" id="sumar" aria-label="Aumentar cantidad">+</button>
+                    </div>
+                </label>
+
+                <button type="submit">Crear pedido</button>
+            </form>
+        </details>
+
+
+        <!-- PUBLICAR MENSAJE -->
+        <details>
+            <summary>Publicar mensaje</summary>
+
+            <p class="description">
+                Envía un mensaje a un exchange mediante una routing key.
+            </p>
+
+            <form id="form-publicar">
+                <label for="exchange">
+                    Exchange
+                    <input type="text" id="exchange" name="exchange" placeholder="pedidos.exchange" required>
+                </label>
+
+                <label for="routing-key">
+                    Routing key
+                    <input type="text" id="routing-key" name="routingKey" placeholder="pedido.creado" required>
+                </label>
+
+                <label for="mensaje">
+                    Mensaje
+                    <input type="text" id="mensaje" name="mensaje" placeholder="Contenido del mensaje" required>
+                </label>
+
+                <button type="submit">Publicar mensaje</button>
+            </form>
+        </details>
+
+        <!-- CONFIGURAR DLX Y DLQ -->
+        <details>
+            <summary>Configurar colas</summary>
+
+            <p class="description">
+                Define los nombres de la cola principal, el Dead Letter
+                Exchange y la Dead Letter Queue.
+            </p>
+
+            <form id="form-configurar">
+                <label for="cola-principal">
+                    Cola principal
+                    <input type="text" id="cola-principal" name="colaPrincipal" placeholder="pedidos.queue" required>
+                </label>
+
+                <label for="exchange-dlx">
+                    Dead Letter Exchange (DLX)
+                    <input type="text" id="exchange-dlx" name="exchangeDlx" placeholder="pedidos.dlx" required>
+                </label>
+
+                <label for="routing-key-dlx">
+                    Routing key de dead lettering
+                    <input type="text" id="routing-key-dlx" name="routingKeyDlx" placeholder="pedido.fallido" required>
+                </label>
+
+                <label for="cola-dlq">
+                    Dead Letter Queue (DLQ)
+                    <input type="text" id="cola-dlq" name="colaDlq" placeholder="pedidos.dlq" required>
+                </label>
+
+                <button type="submit">Configurar encolamiento</button>
+            </form>
+        </details>
+
+        <!-- SIMULAR ERROR -->
+        <details>
+            <summary>Simular error</summary>
+
+            <p class="description">
+                Simula una situación de fallo para probar el manejo
+                de mensajes no procesados.
+            </p>
+
+            <form id="form-error">
+                <label for="mensaje-error">
+                    ID o contenido del mensaje
+                    <input type="text" id="mensaje-error" name="mensajeError" placeholder="pedido-123" required>
+                </label>
+
+                <label for="tipo-error">
+                    Tipo de error
+                    <select id="tipo-error" name="tipoError">
+                        <option value="rechazado">
+                            Mensaje rechazado (nack)
+                        </option>
+                        <option value="requeue">
+                            Rechazado con requeue
+                        </option>
+                        <option value="timeout">
+                            Timeout de procesamiento
+                        </option>
+                        <option value="fallo">
+                            Fallo de procesamiento
+                        </option>
+                    </select>
+                </label>
+
+                <button type="submit">Simular error</button>
+            </form>
+        </details>
+
+        <!-- GESTIÓN DE DLQ -->
+        <details>
+            <summary>Dead Letter Queue</summary>
+
+            <p class="description">
+                Inspecciona, reprocesa o descarta mensajes que hayan
+                llegado a la cola de mensajes fallidos.
+            </p>
+
+            <form id="form-dlq">
+                <label for="mensaje-dlq">
+                    ID del mensaje
+                    <input type="text" id="mensaje-dlq" name="mensajeDlq" placeholder="msg-123" required>
+                </label>
+
+                <label for="accion-dlq">
+                    Acción
+                    <select id="accion-dlq" name="accionDlq">
+                        <option value="inspeccionar">
+                            Inspeccionar mensaje
+                        </option>
+                        <option value="reprocesar">
+                            Reprocesar mensaje
+                        </option>
+                        <option value="descartar">
+                            Descartar mensaje
+                        </option>
+                    </select>
+                </label>
+
+                <button type="submit">Ejecutar acción</button>
+            </form>
+        </details>
+
+        <!-- POLÍTICA DE REINTENTOS -->
+        <details>
+            <summary>Política de reintentos</summary>
+
+            <p class="description">
+                Define la cantidad máxima de reintentos y el intervalo
+                entre ellos.
+            </p>
+
+            <form id="form-reintentos">
+                <label for="max-reintentos">
+                    Máximo de reintentos
+                    <input type="number" id="max-reintentos" name="maxReintentos" value="3" min="0" step="1" required>
+                </label>
+
+                <label for="intervalo">
+                    Intervalo entre reintentos (segundos)
+                    <input type="number" id="intervalo" name="intervalo" value="5" min="1" step="1" required>
+                </label>
+
+                <button type="submit">Aplicar política</button>
+            </form>
+        </details>
+
+        <!-- ESTADO DE LA DEMO -->
+        <section class="status" id="estado" aria-live="polite">
+            <strong>Estado:</strong> Demo preparada. Esperando acciones.
+        </section>
+
+    </main>
+
+    <script>
+        const cantidad = document.getElementById("cantidad");
+        const restar = document.getElementById("restar");
+        const sumar = document.getElementById("sumar");
+        const estado = document.getElementById("estado");
+
+        // Control de cantidad
+        sumar.addEventListener("click", () => {
+            const valorActual = Number(cantidad.value) || 1;
+            cantidad.value = valorActual + 1;
+        });
+
+        restar.addEventListener("click", () => {
+            const valorActual = Number(cantidad.value) || 1;
+            cantidad.value = Math.max(1, valorActual - 1);
+        });
+
+        cantidad.addEventListener("change", () => {
+            const valorActual = Number(cantidad.value);
+
+            if (!Number.isInteger(valorActual) || valorActual < 1) {
+                cantidad.value = 1;
+            }
+        });
+
+        const formularios = [
+            {
+                id: "form-pedido",
+                nombre: "Crear pedido"
+            },
+            {
+                id: "form-publicar",
+                nombre: "Publicar mensaje"
+            },
+            {
+                id: "form-configurar",
+                nombre: "Configurar colas"
+            },
+            {
+                id: "form-error",
+                nombre: "Simular error"
+            },
+            {
+                id: "form-dlq",
+                nombre: "Ejecutar acción sobre la DLQ"
+            },
+            {
+                id: "form-reintentos",
+                nombre: "Aplicar política de reintentos"
+            }
+        ];
+
+        formularios.forEach(({ id, nombre }) => {
+            const formulario = document.getElementById(id);
+
+            formulario.addEventListener("submit", (event) => {
+                event.preventDefault();
+
+                const datos = Object.fromEntries(
+                    new FormData(formulario).entries()
+                );
+
+                estado.replaceChildren();
+
+                const titulo = document.createElement("strong");
+                titulo.textContent = "Estado: ";
+
+                const detalle = document.createElement("span");
+                detalle.textContent =
+                    `${nombre} — formulario validado. ` +
+                    "Pendiente de conectar con el backend RabbitMQ.";
+
+                estado.append(titulo, detalle);
+
+                console.log(nombre, datos);
+            });
+        });
+    </script>
+</body>
+
+</html>
