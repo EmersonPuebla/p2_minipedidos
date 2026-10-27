@@ -370,12 +370,12 @@
                         <label for="cliente">
                             Cliente
                             <input type="text" id="cliente" placeholder="Ej. Ana"
-                                   autocomplete="off" required>
+                                   autocomplete="off">
                         </label>
 
                         <label for="producto">
                             Producto
-                            <select id="producto" required>
+                            <select id="producto">
                                 <option value="" disabled selected>Selecciona</option>
                                 <option value="Teclado">Teclado</option>
                                 <option value="Ratón">Ratón</option>
@@ -390,7 +390,7 @@
                             Cantidad
                             <div class="quantity_input">
                                 <button type="button" id="restar" aria-label="Disminuir">−</button>
-                                <input type="number" id="cantidad" value="1" min="1" step="1" required>
+                                <input type="number" id="cantidad" value="1" step="1">
                                 <button type="button" id="sumar" aria-label="Aumentar">+</button>
                             </div>
                         </label>
@@ -1195,14 +1195,14 @@
         });
 
         $("restar").addEventListener("click", () => {
-            const valor = Number($("cantidad").value) || 1;
-            $("cantidad").value = Math.max(1, valor - 1);
+            const valor = Number($("cantidad").value) || 0;
+            $("cantidad").value = valor - 1;
         });
 
         $("cantidad").addEventListener("change", () => {
             const valor = Number($("cantidad").value);
-            if (!Number.isInteger(valor) || valor < 1) {
-                $("cantidad").value = 1;
+            if (!Number.isInteger(valor)) {
+                $("cantidad").value = 0;
             }
         });
 
@@ -1212,14 +1212,22 @@
 
             await conBoton(boton, async () => {
                 try {
-                    const respuesta = await enviar("/api/pedidos", {
+                    const pedido = {
+                        pedidoId: Date.now(),
                         cliente: $("cliente").value.trim(),
                         producto: $("producto").value,
-                        cantidad: Number($("cantidad").value)
+                        cantidad: Number($("cantidad").value),
+                        estado: "PENDIENTE",
+                        intentos: 0
+                    };
+                    const respuesta = await enviar("/api/mensajes/publicar", {
+                        exchange: "pedidos.exchange",
+                        routingKey: "pedidos.nuevo",
+                        mensaje: JSON.stringify(pedido)
                     });
 
                     mostrarEstado(
-                        `Pedido #${respuesta.pedidoId} publicado en ${respuesta.exchange} `
+                        `Pedido publicado por el productor en ${respuesta.exchange} `
                         + `(${respuesta.routingKey}). messageId: ${respuesta.messageId}`
                     );
 
