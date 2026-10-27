@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demo Encolamiento RabbitMQ</title>
+    <title>MiniPedidos</title>
 
     <style>
         :root {
@@ -25,15 +25,22 @@
 
         body {
             margin: 0;
+            background: #000;
+            color: #fff;
         }
 
         main {
             display: grid;
-            grid-template-columns: repeat(auto-fit,
-                    minmax(min(100%, 280px), 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: var(--size-m);
             padding: var(--size-m);
             align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            main {
+                grid-template-columns: 1fr;
+            }
         }
 
         details {
@@ -56,7 +63,6 @@
             margin-bottom: var(--size-m);
         }
 
-
         form {
             min-width: 0;
         }
@@ -67,7 +73,8 @@
         }
 
         input,
-        select {
+        select,
+        textarea {
             display: block;
             width: 100%;
             min-width: 0;
@@ -76,6 +83,21 @@
             border: 1px solid var(--color-border);
             border-radius: var(--border-radius);
             font: inherit;
+        }
+
+        select {
+            background-color: #000;
+            color: #fff;
+        }
+
+        option {
+            background-color: #000;
+            color: #fff;
+        }
+
+        textarea {
+            min-height: 72px;
+            resize: vertical;
         }
 
         .quantity_input {
@@ -103,6 +125,7 @@
             padding: var(--size-s);
             border: 1px solid var(--color-border);
             border-radius: var(--border-radius);
+            color: inherit;
             font: inherit;
             cursor: pointer;
         }
@@ -116,7 +139,15 @@
             width: 100%;
             border: none;
             background-color: var(--color-accent);
+            color: #fff;
             margin-top: var(--size-s);
+        }
+
+        button:disabled,
+        input:disabled,
+        select:disabled {
+            opacity: .5;
+            cursor: default;
         }
 
         .description {
@@ -125,301 +156,1204 @@
             line-height: 1.4;
         }
 
-        .status {
+        .status-log {
             grid-column: 1 / -1;
-            padding: var(--size-s) var(--size-m);
+        }
+
+        .status-log summary {
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        .status-log textarea {
+            min-height: 120px;
+            max-height: 180px;
+            margin-top: var(--size-s);
+            font-family: monospace;
+            font-size: 0.8rem;
+            resize: vertical;
+            background: #000;
+            color: #fff;
+            user-select: text;
+        }
+
+        .acciones {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--size-s);
+        }
+
+        .acciones a {
+            padding: var(--size-s);
             border: 1px solid var(--color-border);
             border-radius: var(--border-radius);
-            overflow-wrap: anywhere;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .acciones a:hover {
+            outline: 2px solid white;
+            outline-offset: 4px;
+        }
+
+        .item {
+            margin-top: var(--size-s);
+            padding: var(--size-s);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            background: transparent;
+        }
+
+        .item summary {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .item[open] > summary {
+            margin-bottom: var(--size-s);
+        }
+
+        .stats {
+            color: #aaa;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .mono {
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .muted {
+            color: #aaa;
+        }
+
+        .oculto {
+            display: none;
+        }
+
+        .fila {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--size-s);
+        }
+
+        .tabla-scroll {
+            max-height: 220px;
+            overflow: auto;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th,
+        td {
+            padding: 4px 6px;
+            border-bottom: 1px solid var(--color-border);
+            text-align: left;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        th {
+            color: #aaa;
+            font-weight: normal;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .pequeno {
+            padding: 4px 6px;
+            font-size: 0.75rem;
+        }
+
+        @keyframes destacar {
+            0%, 25%, 50%, 75% {
+                box-shadow: inset 0 0 0 2px var(--color-accent);
+            }
+            100% {
+                box-shadow: inset 0 0 0 2px transparent;
+            }
+        }
+
+        tr.nuevo,
+        tr.nuevo td {
+            animation: destacar 3s ease-out;
+        }
+
+        .fila-datos {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+            gap: var(--size-m);
+            align-items: start;
+        }
+
+        .secundarios {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--size-m);
+            align-items: start;
+        }
+
+        #nodo-bindings {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 900px) {
+            .fila-datos {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .secundarios {
+                grid-template-columns: 1fr;
+            }
+
+            #nodo-bindings {
+                grid-column: auto;
+            }
+        }
+
+        .resultado-ack {
+            color: var(--color-accent);
+            font-weight: bold;
+        }
+
+        .resultado-nack {
+            font-weight: bold;
+        }
+
+        pre {
+            max-height: 260px;
+            margin: var(--size-s) 0 0;
+            padding-top: var(--size-s);
+            overflow: auto;
+            border-top: 1px solid var(--color-border);
+            font-size: 0.8rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
         }
     </style>
 </head>
 
 <body>
+
     <main>
 
+        <section class="acciones" aria-label="Acciones de RabbitMQ">
+            <button type="button" id="btn-reconectar">Reconectar</button>
+            <a href="http://localhost:15672" target="_blank" rel="noreferrer">Panel RabbitMQ</a>
+        </section>
 
-        <!-- CREAR PEDIDO -->
-        <details open>
-            <summary>Crear pedido</summary>
+        <details class="status-log" id="estado-panel" open>
+            <summary id="estado-resumen">Estado: listo</summary>
+            <textarea id="estado-log" readonly spellcheck="false"></textarea>
+        </details>
 
-            <form id="form-pedido">
-                <label for="nombre-cliente">
-                    Nombre del cliente
-                    <input type="text" id="nombre-cliente" name="nombreCliente" placeholder="Ej. Juan Pérez" required>
-                </label>
+                <!-- PRODUCTOR -->
+                <details id="nodo-productor" open>
+                    <summary>Productor</summary>
 
-                <label for="articulo">
-                    Producto
-                    <select id="articulo" name="articulo" required>
-                        <option value="" disabled selected>
-                            Selecciona un producto
-                        </option>
-                        <option value="teclado">Teclado</option>
-                        <option value="raton">Ratón</option>
-                        <option value="monitor">Monitor</option>
-                        <option value="auriculares">Auriculares</option>
-                    </select>
-                </label>
+                    <form id="form-pedido">
+                        <label for="cliente">
+                            Cliente
+                            <input type="text" id="cliente" placeholder="Ej. Ana"
+                                   autocomplete="off" required>
+                        </label>
 
-                <label for="cantidad">
-                    Cantidad
-                    <div class="quantity_input">
-                        <button type="button" id="restar" aria-label="Disminuir cantidad">-</button>
+                        <label for="producto">
+                            Producto
+                            <select id="producto" required>
+                                <option value="" disabled selected>Selecciona</option>
+                                <option value="Teclado">Teclado</option>
+                                <option value="Ratón">Ratón</option>
+                                <option value="Monitor">Monitor</option>
+                                <option value="Auriculares">Auriculares</option>
+                                <option value="Notebook">Notebook</option>
+                                <option value="Webcam">Webcam</option>
+                            </select>
+                        </label>
 
-                        <input type="number" id="cantidad" name="cantidad" value="1" min="1" step="1" required>
+                        <label for="cantidad">
+                            Cantidad
+                            <div class="quantity_input">
+                                <button type="button" id="restar" aria-label="Disminuir">−</button>
+                                <input type="number" id="cantidad" value="1" min="1" step="1" required>
+                                <button type="button" id="sumar" aria-label="Aumentar">+</button>
+                            </div>
+                        </label>
 
-                        <button type="button" id="sumar" aria-label="Aumentar cantidad">+</button>
+                        <button type="submit">Crear pedido</button>
+                    </form>
+
+                    <div class="fila" style="margin-top: var(--size-s);">
+                        <button type="button" id="btn-lote">Enviar 6 pedidos</button>
                     </div>
-                </label>
-
-                <button type="submit">Crear pedido</button>
-            </form>
-        </details>
+                </details>
 
 
-        <!-- PUBLICAR MENSAJE -->
-        <details>
-            <summary>Publicar mensaje</summary>
 
-            <p class="description">
-                Envía un mensaje a un exchange mediante una routing key.
-            </p>
+        <!-- CONSUMIDOR -->
+                <details id="nodo-consumer" open>
+                    <summary>Consumidor</summary>
 
-            <form id="form-publicar">
-                <label for="exchange">
-                    Exchange
-                    <input type="text" id="exchange" name="exchange" placeholder="pedidos.exchange" required>
-                </label>
+                    <div class="fila" style="justify-content: space-between;">
+                        <p class="stats" style="margin: 0;">
+                            <strong id="consumidor-estado">—</strong> ·
+                            <span id="consumidor-activos">0</span> consumidores
+                        </p>
+                        <button type="button" id="btn-consumidor">Encender</button>
+                    </div>
 
-                <label for="routing-key">
-                    Routing key
-                    <input type="text" id="routing-key" name="routingKey" placeholder="pedido.creado" required>
-                </label>
+                    <form id="form-consumir" style="margin-top: var(--size-m);">
+                        <label for="consumir-cola">
+                            Cola
+                            <select id="consumir-cola">
+                                <option value="pedidos.cola">pedidos.cola</option>
+                                <option value="pedidos.retry.cola">pedidos.retry.cola</option>
+                            </select>
+                        </label>
 
-                <label for="mensaje">
-                    Mensaje
-                    <input type="text" id="mensaje" name="mensaje" placeholder="Contenido del mensaje" required>
-                </label>
+                        <label for="consumir-mensaje">
+                            Mensaje
+                            <select id="consumir-mensaje">
+                                <option value="">No hay mensajes</option>
+                            </select>
+                        </label>
 
-                <button type="submit">Publicar mensaje</button>
-            </form>
-        </details>
+                        <label for="consumir-accion">
+                            Acción
+                            <select id="consumir-accion">
+                                <option value="">Consumir normal</option>
+                                <option value="rechazado">Error permanente (DLQ)</option>
+                                <option value="requeue">Error temporal (reintento)</option>
+                                <option value="timeout">Timeout (agota reintentos)</option>
+                            </select>
+                        </label>
 
-        <!-- CONFIGURAR DLX Y DLQ -->
-        <details>
-            <summary>Configurar colas</summary>
+                        <button type="submit">Consumir</button>
+                    </form>
 
-            <p class="description">
-                Define los nombres de la cola principal, el Dead Letter
-                Exchange y la Dead Letter Queue.
-            </p>
+                    <p class="stats oculto" id="consumir-ayuda">
+                        Apaga el consumidor para consumir manualmente.
+                    </p>
 
-            <form id="form-configurar">
-                <label for="cola-principal">
-                    Cola principal
-                    <input type="text" id="cola-principal" name="colaPrincipal" placeholder="pedidos.queue" required>
-                </label>
+                    <details class="item" id="nodo-acknack" open>
+                        <summary>ACK / NACK</summary>
 
-                <label for="exchange-dlx">
-                    Dead Letter Exchange (DLX)
-                    <input type="text" id="exchange-dlx" name="exchangeDlx" placeholder="pedidos.dlx" required>
-                </label>
+                        <p class="stats" style="margin-top: 0;">
+                            <strong id="ack-total">0</strong> ACK ·
+                            <strong id="nack-total">0</strong> NACK
+                        </p>
 
-                <label for="routing-key-dlx">
-                    Routing key de dead lettering
-                    <input type="text" id="routing-key-dlx" name="routingKeyDlx" placeholder="pedido.fallido" required>
-                </label>
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Pedido</th>
+                                        <th>Cliente</th>
+                                        <th>Resultado</th>
+                                        <th>Detalle</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-acknack">
+                                    <tr>
+                                        <td colspan="4" class="muted">Aún no hay resultados.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+                </details>
 
-                <label for="cola-dlq">
-                    Dead Letter Queue (DLQ)
-                    <input type="text" id="cola-dlq" name="colaDlq" placeholder="pedidos.dlq" required>
-                </label>
 
-                <button type="submit">Configurar encolamiento</button>
-            </form>
-        </details>
 
-        <!-- SIMULAR ERROR -->
-        <details>
-            <summary>Simular error</summary>
+        <section class="fila-datos" aria-label="DLQ y colas">
 
-            <p class="description">
-                Simula una situación de fallo para probar el manejo
-                de mensajes no procesados.
-            </p>
+        <details id="nodo-dlq" open>
+                            <summary>DLQ</summary>
 
-            <form id="form-error">
-                <label for="mensaje-error">
-                    ID o contenido del mensaje
-                    <input type="text" id="mensaje-error" name="mensajeError" placeholder="pedido-123" required>
-                </label>
+                            <p class="stats"><strong id="dlq-total">0</strong> mensajes</p>
 
-                <label for="tipo-error">
-                    Tipo de error
-                    <select id="tipo-error" name="tipoError">
-                        <option value="rechazado">
-                            Mensaje rechazado (nack)
-                        </option>
-                        <option value="requeue">
-                            Rechazado con requeue
-                        </option>
-                        <option value="timeout">
-                            Timeout de procesamiento
-                        </option>
-                        <option value="fallo">
-                            Fallo de procesamiento
-                        </option>
-                    </select>
-                </label>
+                            <div class="tabla-scroll">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Pedido</th>
+                                            <th>Cliente</th>
+                                            <th>Motivo</th>
+                                            <th>Reintentos</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-dlq">
+                                        <tr>
+                                            <td colspan="6" class="muted">No hay mensajes en la DLQ.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                <button type="submit">Simular error</button>
-            </form>
-        </details>
+                            <div class="fila" style="margin-top: var(--size-s);">
+                                <button type="button" id="btn-refrescar-dlq">Refrescar</button>
+                                <button type="button" id="btn-purgar-dlq">Vaciar DLQ</button>
+                            </div>
 
-        <!-- GESTIÓN DE DLQ -->
-        <details>
-            <summary>Dead Letter Queue</summary>
+                            <pre id="detalle-dlq" class="oculto"></pre>
+                        </details>
 
-            <p class="description">
-                Inspecciona, reprocesa o descarta mensajes que hayan
-                llegado a la cola de mensajes fallidos.
-            </p>
+        <!-- COLAS -->
+                <details id="nodo-cola" open class="tabla-nodo">
+                    <summary>Colas</summary>
 
-            <form id="form-dlq">
-                <label for="mensaje-dlq">
-                    ID del mensaje
-                    <input type="text" id="mensaje-dlq" name="mensajeDlq" placeholder="msg-123" required>
-                </label>
+                    <p class="stats">
+                        <strong id="cola-ready">0</strong> en pedidos.cola ·
+                        <strong id="retry-ready">0</strong> en pedidos.retry.cola ·
+                        <strong id="cola-consumers">0</strong> consumidores
+                    </p>
 
-                <label for="accion-dlq">
-                    Acción
-                    <select id="accion-dlq" name="accionDlq">
-                        <option value="inspeccionar">
-                            Inspeccionar mensaje
-                        </option>
-                        <option value="reprocesar">
-                            Reprocesar mensaje
-                        </option>
-                        <option value="descartar">
-                            Descartar mensaje
-                        </option>
-                    </select>
-                </label>
+                    <label for="cola-seleccionada">
+                        Cola
+                        <select id="cola-seleccionada">
+                            <option value="pedidos.cola">pedidos.cola</option>
+                            <option value="pedidos.retry.cola">pedidos.retry.cola</option>
+                        </select>
+                    </label>
 
-                <button type="submit">Ejecutar acción</button>
-            </form>
-        </details>
+                    <div class="tabla-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Cliente</th>
+                                    <th>Producto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-cola">
+                                <tr>
+                                    <td colspan="3" class="muted">No hay mensajes en esta cola.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-        <!-- POLÍTICA DE REINTENTOS -->
-        <details>
-            <summary>Política de reintentos</summary>
+                    <button type="button" id="btn-refrescar-cola"
+                            style="margin-top: var(--size-s);">Refrescar</button>
+                </details>
 
-            <p class="description">
-                Define la cantidad máxima de reintentos y el intervalo
-                entre ellos.
-            </p>
+        </section>
 
-            <form id="form-reintentos">
-                <label for="max-reintentos">
-                    Máximo de reintentos
-                    <input type="number" id="max-reintentos" name="maxReintentos" value="3" min="0" step="1" required>
-                </label>
+        <section class="secundarios" aria-label="Referencias de RabbitMQ">
 
-                <label for="intervalo">
-                    Intervalo entre reintentos (segundos)
-                    <input type="number" id="intervalo" name="intervalo" value="5" min="1" step="1" required>
-                </label>
+            <!-- EXCHANGE -->
+                    <details id="nodo-exchange" open class="tabla-nodo">
+                        <summary>Exchange</summary>
 
-                <button type="submit">Aplicar política</button>
-            </form>
-        </details>
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Exchange</th>
+                                        <th>Routing key</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="mono">pedidos.exchange</span></td>
+                                        <td><span class="mono">pedidos.nuevo</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="mono">pedidos.dlx</span></td>
+                                        <td><span class="mono">pedidos.error</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="mono">pedidos.retry.exchange</span></td>
+                                        <td><span class="mono">pedidos.retry</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
 
-        <!-- ESTADO DE LA DEMO -->
-        <section class="status" id="estado" aria-live="polite">
-            <strong>Estado:</strong> Demo preparada. Esperando acciones.
+
+
+            <details id="nodo-dlx" open>
+                                <summary>DLX</summary>
+
+                                <div class="tabla-scroll">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Exchange</th>
+                                                <th>Routing key</th>
+                                                <th>DLQ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><span class="mono">pedidos.dlx</span></td>
+                                                <td><span class="mono">pedidos.error</span></td>
+                                                <td><span class="mono">pedidos.dlq</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </details>
+
+
+
+            <!-- BINDINGS -->
+                    <details id="nodo-bindings" open class="tabla-nodo">
+                        <summary>Bindings</summary>
+
+                        <div class="tabla-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Exchange</th>
+                                        <th>Cola</th>
+                                        <th>Routing key</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="mono">pedidos.exchange</span></td>
+                                        <td><span class="mono">pedidos.cola</span></td>
+                                        <td><span class="mono">pedidos.nuevo</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="mono">pedidos.dlx</span></td>
+                                        <td><span class="mono">pedidos.dlq</span></td>
+                                        <td><span class="mono">pedidos.error</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="mono">pedidos.retry.exchange</span></td>
+                                        <td><span class="mono">pedidos.retry.cola</span></td>
+                                        <td><span class="mono">pedidos.retry</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+
+
+
         </section>
 
     </main>
 
     <script>
-        const cantidad = document.getElementById("cantidad");
-        const restar = document.getElementById("restar");
-        const sumar = document.getElementById("sumar");
-        const estado = document.getElementById("estado");
+        const $ = (id) => document.getElementById(id);
 
-        // Control de cantidad
-        sumar.addEventListener("click", () => {
-            const valorActual = Number(cantidad.value) || 1;
-            cantidad.value = valorActual + 1;
-        });
+        const estadoResumen = $("estado-resumen");
+        const estadoLog = $("estado-log");
+        const tablaDlq = $("tabla-dlq");
+        const detalleDlq = $("detalle-dlq");
+        const tablaAckNack = $("tabla-acknack");
+        const ackTotal = $("ack-total");
+        const nackTotal = $("nack-total");
 
-        restar.addEventListener("click", () => {
-            const valorActual = Number(cantidad.value) || 1;
-            cantidad.value = Math.max(1, valorActual - 1);
-        });
+        let cargandoMetricas = false;
+        let cargandoDlq = false;
+        let cargandoMensajes = false;
+        let mensajeSeleccionado = "";
 
-        cantidad.addEventListener("change", () => {
-            const valorActual = Number(cantidad.value);
+        const destacadosCola = new Map();
+        const destacadosDlq = new Map();
+        const destacadosResultados = new Map();
+        const idsResultados = new Set();
+        const resultados = [];
 
-            if (!Number.isInteger(valorActual) || valorActual < 1) {
-                cantidad.value = 1;
+        let ackContador = 0;
+        let nackContador = 0;
+
+        function esc(valor) {
+            return String(valor ?? "").replace(/[&<>"']/g, (caracter) => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[caracter]);
+        }
+
+        function horaActual() {
+            return new Intl.DateTimeFormat("es-CL", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit"
+            }).format(new Date());
+        }
+
+        function registrar(texto, tipo = "UI", actualizarResumen = true) {
+            const mensaje = String(texto ?? "");
+            if (actualizarResumen) {
+                estadoResumen.textContent = mensaje || "Estado: listo";
             }
-        });
+            estadoLog.value += `${horaActual()} [${tipo}] ${mensaje}\n`;
 
-        const formularios = [
-            {
-                id: "form-pedido",
-                nombre: "Crear pedido"
-            },
-            {
-                id: "form-publicar",
-                nombre: "Publicar mensaje"
-            },
-            {
-                id: "form-configurar",
-                nombre: "Configurar colas"
-            },
-            {
-                id: "form-error",
-                nombre: "Simular error"
-            },
-            {
-                id: "form-dlq",
-                nombre: "Ejecutar acción sobre la DLQ"
-            },
-            {
-                id: "form-reintentos",
-                nombre: "Aplicar política de reintentos"
+            const lineas = estadoLog.value.split("\n");
+            if (lineas.length > 300) {
+                estadoLog.value = lineas.slice(-300).join("\n");
             }
-        ];
+            estadoLog.scrollTop = estadoLog.scrollHeight;
+        }
 
-        formularios.forEach(({ id, nombre }) => {
-            const formulario = document.getElementById(id);
+        function mostrarEstado(texto) {
+            registrar(texto, "UI");
+        }
 
-            formulario.addEventListener("submit", (event) => {
-                event.preventDefault();
+        function registrarEvento(evento) {
+            if (!evento || !evento.mensaje) {
+                return;
+            }
+            const consumidor = evento.datos?.consumidor
+                ? ` · ${evento.datos.consumidor}`
+                : "";
+            const actualizarResumen = evento.tipo !== "CONECTADO";
+            registrar(`${evento.mensaje}${consumidor}`,
+                evento.tipo || "EVENTO", actualizarResumen);
+            registrarResultado(evento);
+        }
 
-                const datos = Object.fromEntries(
-                    new FormData(formulario).entries()
+        function clasificarResultado(evento) {
+            switch (evento.tipo) {
+                case "ACK":
+                    return { esAck: true, detalle: "Procesado" };
+                case "DUPLICADO_IGNORADO":
+                    return { esAck: true, detalle: "Duplicado" };
+                case "NACK_DLQ":
+                    return { esAck: false, detalle: "→ DLQ" };
+                case "ERROR_TEMPORAL":
+                    // El original se confirma con ACK; la copia se programa
+                    // en pedidos.retry.cola. El detalle conserva el reintento.
+                    return { esAck: true, detalle: "→ reintento" };
+                case "REINTENTOS_AGOTADOS":
+                    return { esAck: false, detalle: "→ DLQ" };
+                default:
+                    return null;
+            }
+        }
+
+        function registrarResultado(evento) {
+            const clasificacion = clasificarResultado(evento);
+            if (!clasificacion) {
+                return;
+            }
+
+            const clave = String(
+                evento.id
+                ?? `${evento.tipo}-${evento.fecha}-${evento.mensaje}`
+            );
+            if (idsResultados.has(clave)) {
+                return;
+            }
+            idsResultados.add(clave);
+
+            if (clasificacion.esAck) {
+                ackContador++;
+            } else {
+                nackContador++;
+            }
+
+            resultados.unshift({
+                clave,
+                pedido: evento.datos?.pedidoId ?? "—",
+                cliente: evento.datos?.cliente ?? "—",
+                esAck: clasificacion.esAck,
+                detalle: clasificacion.detalle
+            });
+            if (resultados.length > 20) {
+                resultados.pop();
+            }
+
+            renderResultados();
+        }
+
+        function renderResultados() {
+            ackTotal.textContent = ackContador;
+            nackTotal.textContent = nackContador;
+
+            if (resultados.length === 0) {
+                tablaAckNack.innerHTML =
+                    '<tr><td colspan="4" class="muted">Aún no hay resultados.</td></tr>';
+                return;
+            }
+
+            const anteriores = new Set(
+                [...tablaAckNack.querySelectorAll("tr[data-clave]")]
+                    .map((fila) => fila.dataset.clave)
+            );
+            const ahora = Date.now();
+
+            tablaAckNack.innerHTML = resultados.map((resultado) => {
+                if (!anteriores.has(resultado.clave)) {
+                    destacadosResultados.set(resultado.clave, ahora);
+                }
+
+                const destacar = destacadosResultados.has(resultado.clave)
+                    && (ahora - destacadosResultados.get(resultado.clave) < 3000);
+                if (!destacar) {
+                    destacadosResultados.delete(resultado.clave);
+                }
+
+                return `
+                    <tr data-clave="${esc(resultado.clave)}" class="${destacar ? "nuevo" : ""}">
+                        <td>${esc(resultado.pedido)}</td>
+                        <td>${esc(resultado.cliente)}</td>
+                        <td class="${resultado.esAck ? "resultado-ack" : "resultado-nack"}">
+                            ${resultado.esAck ? "✓ ACK" : "× NACK"}
+                        </td>
+                        <td>${esc(resultado.detalle)}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        async function api(url, opciones = {}) {
+            const respuesta = await fetch(url, {
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(opciones.headers || {})
+                },
+                ...opciones
+            });
+
+            const texto = await respuesta.text();
+            let datos = null;
+
+            if (texto) {
+                try {
+                    datos = JSON.parse(texto);
+                } catch {
+                    datos = texto;
+                }
+            }
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    datos?.mensaje
+                    || datos?.error
+                    || (typeof datos === "string" ? datos : `HTTP ${respuesta.status}`)
+                );
+            }
+
+            return datos;
+        }
+
+        function enviar(url, payload) {
+            return api(url, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        }
+
+        async function conBoton(boton, tarea) {
+            if (!boton) {
+                return tarea();
+            }
+            const texto = boton.textContent;
+            boton.disabled = true;
+            boton.textContent = "Procesando...";
+            try {
+                return await tarea();
+            } finally {
+                boton.disabled = false;
+                boton.textContent = texto;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Estado de las colas
+        // ---------------------------------------------------------
+        async function cargarMetricas() {
+            if (cargandoMetricas) {
+                return;
+            }
+            cargandoMetricas = true;
+
+            try {
+                const m = await api("/api/metricas");
+                const principal = m.colas.find((c) => c.rol === "principal") || {};
+                const retry = m.colas.find((c) => c.rol === "reintentos") || {};
+
+                $("cola-ready").textContent = principal.ready ?? 0;
+                $("retry-ready").textContent = retry.ready ?? 0;
+                $("cola-consumers").textContent = principal.consumidores ?? 0;
+                $("consumidor-activos").textContent = principal.consumidores ?? 0;
+            } catch {
+                // Sin conexión: los contadores quedan como estaban.
+            } finally {
+                cargandoMetricas = false;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Tabla de la cola seleccionada
+        // ---------------------------------------------------------
+        async function cargarCola() {
+            const cola = $("cola-seleccionada").value;
+            const cuerpo = $("tabla-cola");
+
+            try {
+                const anteriores = new Set(
+                    [...cuerpo.querySelectorAll("tr[data-id]")]
+                        .map((fila) => fila.dataset.id)
                 );
 
-                estado.replaceChildren();
+                const data = await api(
+                    `/api/colas/mensajes?cola=${encodeURIComponent(cola)}`);
+                const mensajes = data.mensajes || [];
 
-                const titulo = document.createElement("strong");
-                titulo.textContent = "Estado: ";
+                if (mensajes.length === 0) {
+                    cuerpo.innerHTML =
+                        '<tr><td colspan="3" class="muted">No hay mensajes en esta cola.</td></tr>';
+                    return;
+                }
 
-                const detalle = document.createElement("span");
-                detalle.textContent =
-                    `${nombre} — formulario validado. ` +
-                    "Pendiente de conectar con el backend RabbitMQ.";
+                const ahora = Date.now();
+                cuerpo.innerHTML = mensajes.map((m) => {
+                    if (!anteriores.has(m.id)) {
+                        destacadosCola.set(m.id, ahora);
+                    }
+                    const destacar = destacadosCola.has(m.id)
+                        && (ahora - destacadosCola.get(m.id) < 3000);
+                    if (!destacar) {
+                        destacadosCola.delete(m.id);
+                    }
 
-                estado.append(titulo, detalle);
+                    return `
+                        <tr data-id="${esc(m.id)}" class="${destacar ? "nuevo" : ""}">
+                            <td>${esc(m.pedidoId ?? "—")}</td>
+                            <td>${esc(m.cliente ?? "—")}</td>
+                            <td>${esc(m.producto ?? "—")}</td>
+                        </tr>
+                    `;
+                }).join("");
+            } catch {
+                cuerpo.innerHTML =
+                    '<tr><td colspan="3" class="muted">No se pudo leer la cola.</td></tr>';
+            }
+        }
 
-                console.log(nombre, datos);
+        // ---------------------------------------------------------
+        // Consumidor: encender/apagar y consumo manual
+        // ---------------------------------------------------------
+        async function cargarMensajesConsumir() {
+            if (cargandoMensajes) {
+                return;
+            }
+            cargandoMensajes = true;
+
+            const cola = $("consumir-cola").value;
+            const select = $("consumir-mensaje");
+
+            try {
+                const data = await api(
+                    `/api/colas/mensajes?cola=${encodeURIComponent(cola)}`);
+                const mensajes = data.mensajes || [];
+
+                if (mensajes.length === 0) {
+                    select.innerHTML = '<option value="">No hay mensajes</option>';
+                    mensajeSeleccionado = "";
+                    return;
+                }
+
+                select.innerHTML = mensajes.map((m) => `
+                    <option value="${esc(m.id)}">
+                        ${esc(`#${m.pedidoId ?? "—"} · ${m.cliente ?? "—"} · ${m.producto ?? "—"}`)}
+                    </option>
+                `).join("");
+
+                if (mensajeSeleccionado
+                        && [...select.options].some((o) => o.value === mensajeSeleccionado)) {
+                    select.value = mensajeSeleccionado;
+                } else {
+                    mensajeSeleccionado = select.value;
+                }
+            } catch {
+                select.innerHTML = '<option value="">No se pudo leer la cola</option>';
+                mensajeSeleccionado = "";
+            } finally {
+                cargandoMensajes = false;
+            }
+        }
+
+        function actualizarEstadoConsumidor(encendido) {
+            $("consumidor-estado").textContent = encendido ? "Encendido" : "Apagado";
+            $("btn-consumidor").textContent = encendido ? "Apagar" : "Encender";
+
+            const form = $("form-consumir");
+            form.querySelectorAll("select, button").forEach((elemento) => {
+                elemento.disabled = encendido;
+            });
+
+            $("consumir-ayuda").classList.toggle("oculto", !encendido);
+        }
+
+        async function cargarEstadoConsumidor() {
+            try {
+                const respuesta = await api("/api/consumidor/estado");
+                actualizarEstadoConsumidor(respuesta.encendido);
+            } catch {
+                actualizarEstadoConsumidor(false);
+            }
+        }
+
+        async function alternarConsumidor() {
+            const encendido = $("consumidor-estado").textContent === "Encendido";
+            const boton = $("btn-consumidor");
+            const endpoint = encendido
+                ? "/api/consumidor/apagar"
+                : "/api/consumidor/encender";
+
+            boton.disabled = true;
+            try {
+                const respuesta = await enviar(endpoint, {});
+                actualizarEstadoConsumidor(respuesta.encendido);
+                mostrarEstado(respuesta.mensaje);
+                await Promise.allSettled([
+                    cargarMetricas(),
+                    cargarCola(),
+                    cargarMensajesConsumir()
+                ]);
+            } catch (error) {
+                mostrarEstado(`Error: ${error.message}`);
+            } finally {
+                boton.disabled = false;
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Historial de eventos / SSE
+        // ---------------------------------------------------------
+        async function cargarHistorialEventos() {
+            try {
+                const historial = await api("/api/eventos");
+                historial.slice().reverse().forEach(registrarEvento);
+            } catch {
+                // El SSE seguirá actualizando el log.
+            }
+        }
+
+        function conectarSse() {
+            if (!window.EventSource) {
+                return;
+            }
+
+            const fuente = new EventSource("/api/eventos/stream");
+
+            fuente.addEventListener("evento", (mensaje) => {
+                try {
+                    registrarEvento(JSON.parse(mensaje.data));
+                } catch {
+                    // Ignorar un evento inválido.
+                }
+            });
+        }
+
+        // ---------------------------------------------------------
+        // DLQ
+        // ---------------------------------------------------------
+        async function cargarDlq(forzar = false) {
+            if (cargandoDlq) {
+                return;
+            }
+            cargandoDlq = true;
+
+            try {
+                const anteriores = new Set(
+                    [...tablaDlq.querySelectorAll("tr[data-id]")]
+                        .map((fila) => fila.dataset.id)
+                );
+
+                const respuesta = await api("/api/dlq");
+                const mensajes = respuesta.mensajes || [];
+                $("dlq-total").textContent = mensajes.length;
+
+                if (mensajes.length === 0) {
+                    tablaDlq.innerHTML =
+                        '<tr><td colspan="6" class="muted">No hay mensajes en la DLQ.</td></tr>';
+                    detalleDlq.classList.add("oculto");
+                    return;
+                }
+
+                const ahora = Date.now();
+                tablaDlq.innerHTML = mensajes.map((m) => {
+                    if (!anteriores.has(m.id)) {
+                        destacadosDlq.set(m.id, ahora);
+                    }
+                    const destacar = destacadosDlq.has(m.id)
+                        && (ahora - destacadosDlq.get(m.id) < 3000);
+                    if (!destacar) {
+                        destacadosDlq.delete(m.id);
+                    }
+
+                    return `
+                        <tr data-id="${esc(m.id)}" class="${destacar ? "nuevo" : ""}">
+                            <td class="mono">${esc(m.id)}</td>
+                            <td>${esc(m.pedidoId ?? "—")}</td>
+                            <td>${esc(m.cliente ?? "—")}</td>
+                            <td>${esc(m.motivo)}</td>
+                            <td>${esc(m.reintentos ?? 0)}</td>
+                            <td>
+                                <div class="fila">
+                                    <button type="button" class="pequeno"
+                                            data-accion="inspeccionar" data-id="${esc(m.id)}">
+                                        Inspeccionar
+                                    </button>
+                                    <button type="button" class="pequeno"
+                                            data-accion="reprocesar" data-id="${esc(m.id)}">
+                                        Reprocesar
+                                    </button>
+                                    <button type="button" class="pequeno"
+                                            data-accion="descartar" data-id="${esc(m.id)}">
+                                        Descartar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            } catch {
+                tablaDlq.innerHTML =
+                    '<tr><td colspan="6" class="muted">No se pudo consultar la DLQ.</td></tr>';
+            } finally {
+                cargandoDlq = false;
+            }
+        }
+
+        async function ejecutarAccionDlq(boton) {
+            const id = boton.dataset.id;
+            const accion = boton.dataset.accion;
+
+            mostrarEstado(`Ejecutando "${accion}" sobre ${id}...`);
+
+            try {
+                const respuesta = await enviar("/api/dlq/accion", {
+                    mensajeDlq: id,
+                    accionDlq: accion
+                });
+
+                if (accion === "inspeccionar") {
+                    detalleDlq.textContent = JSON.stringify(respuesta.detalle, null, 2);
+                    detalleDlq.classList.remove("oculto");
+                    mostrarEstado(respuesta.mensaje);
+                    await cargarMetricas();
+                } else {
+                    detalleDlq.classList.add("oculto");
+                    mostrarEstado(respuesta.mensaje);
+                    await Promise.allSettled([cargarDlq(true), cargarMetricas()]);
+                }
+            } catch (error) {
+                mostrarEstado(`Error: ${error.message}`);
+            }
+        }
+
+        async function purgarDlq() {
+            if (!confirm("¿Vaciar la DLQ? Se eliminan todos los mensajes fallidos.")) {
+                return;
+            }
+
+            try {
+                const respuesta = await enviar("/api/dlq/purgar", {});
+                mostrarEstado(`${respuesta.mensaje}. Eliminados: ${respuesta.eliminados ?? 0}`);
+                await Promise.allSettled([cargarDlq(true), cargarMetricas()]);
+            } catch (error) {
+                mostrarEstado(`Error: ${error.message}`);
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Formularios
+        // ---------------------------------------------------------
+        $("sumar").addEventListener("click", () => {
+            const valor = Number($("cantidad").value) || 1;
+            $("cantidad").value = valor + 1;
+        });
+
+        $("restar").addEventListener("click", () => {
+            const valor = Number($("cantidad").value) || 1;
+            $("cantidad").value = Math.max(1, valor - 1);
+        });
+
+        $("cantidad").addEventListener("change", () => {
+            const valor = Number($("cantidad").value);
+            if (!Number.isInteger(valor) || valor < 1) {
+                $("cantidad").value = 1;
+            }
+        });
+
+        $("form-pedido").addEventListener("submit", async (evento) => {
+            evento.preventDefault();
+            const boton = evento.submitter || evento.target.querySelector("button[type=submit]");
+
+            await conBoton(boton, async () => {
+                try {
+                    const respuesta = await enviar("/api/pedidos", {
+                        cliente: $("cliente").value.trim(),
+                        producto: $("producto").value,
+                        cantidad: Number($("cantidad").value)
+                    });
+
+                    mostrarEstado(
+                        `Pedido #${respuesta.pedidoId} publicado en ${respuesta.exchange} `
+                        + `(${respuesta.routingKey}). messageId: ${respuesta.messageId}`
+                    );
+
+                    evento.target.reset();
+                    $("cantidad").value = 1;
+                    await Promise.allSettled([
+                        cargarMetricas(),
+                        cargarCola(),
+                        cargarMensajesConsumir()
+                    ]);
+                } catch (error) {
+                    mostrarEstado(`Error: ${error.message}`);
+                }
             });
         });
+
+        $("btn-lote").addEventListener("click", async (evento) => {
+            const boton = evento.currentTarget;
+
+            await conBoton(boton, async () => {
+                try {
+                    const respuesta = await enviar("/api/demo/lote", { cantidad: 6 });
+                    mostrarEstado(`${respuesta.cantidad} pedidos publicados.`);
+                    await Promise.allSettled([
+                        cargarMetricas(),
+                        cargarCola(),
+                        cargarMensajesConsumir()
+                    ]);
+                } catch (error) {
+                    mostrarEstado(`Error: ${error.message}`);
+                }
+            });
+        });
+
+        $("form-consumir").addEventListener("submit", async (evento) => {
+            evento.preventDefault();
+            const boton = evento.submitter || evento.target.querySelector("button[type=submit]");
+            const mensajeId = $("consumir-mensaje").value;
+
+            if (!mensajeId) {
+                mostrarEstado("Selecciona un mensaje de la cola.");
+                return;
+            }
+
+            await conBoton(boton, async () => {
+                try {
+                    const respuesta = await enviar("/api/consumidor/consumir", {
+                        cola: $("consumir-cola").value,
+                        mensajeId: mensajeId,
+                        tipoError: $("consumir-accion").value
+                    });
+
+                    mostrarEstado(`${respuesta.mensaje} (${respuesta.accion})`);
+
+                    setTimeout(() => {
+                        cargarMetricas();
+                        cargarCola();
+                        cargarMensajesConsumir();
+                        cargarDlq(true);
+                    }, 900);
+                } catch (error) {
+                    mostrarEstado(`Error: ${error.message}`);
+                }
+            });
+        });
+
+        $("btn-refrescar-cola").addEventListener("click", async (evento) => {
+            const boton = evento.currentTarget;
+            await conBoton(boton, async () => {
+                await Promise.allSettled([
+                    cargarMetricas(),
+                    cargarCola(),
+                    cargarMensajesConsumir()
+                ]);
+                mostrarEstado("Colas actualizadas.");
+            });
+        });
+
+        $("cola-seleccionada").addEventListener("change", cargarCola);
+        $("consumir-cola").addEventListener("change", () => {
+            mensajeSeleccionado = "";
+            cargarMensajesConsumir();
+        });
+        $("consumir-mensaje").addEventListener("change", () => {
+            mensajeSeleccionado = $("consumir-mensaje").value;
+        });
+        $("btn-consumidor").addEventListener("click", alternarConsumidor);
+
+        tablaDlq.addEventListener("click", (evento) => {
+            const boton = evento.target.closest("button[data-accion]");
+            if (!boton) {
+                return;
+            }
+            ejecutarAccionDlq(boton);
+        });
+
+        $("btn-refrescar-dlq").addEventListener("click", async (evento) => {
+            const boton = evento.currentTarget;
+            await conBoton(boton, async () => {
+                await cargarDlq(true);
+                mostrarEstado("Lista de la DLQ actualizada.");
+            });
+        });
+
+        $("btn-purgar-dlq").addEventListener("click", purgarDlq);
+
+        $("btn-reconectar").addEventListener("click", async (evento) => {
+            const boton = evento.currentTarget;
+            await conBoton(boton, async () => {
+                try {
+                    const respuesta = await enviar("/api/configuracion/reconectar", {});
+                    mostrarEstado(respuesta.mensaje);
+                    await Promise.allSettled([
+                        cargarMetricas(),
+                        cargarCola(),
+                        cargarMensajesConsumir(),
+                        cargarEstadoConsumidor()
+                    ]);
+                } catch (error) {
+                    mostrarEstado(`Error: ${error.message}`);
+                }
+            });
+        });
+
+        // ---------------------------------------------------------
+        // Arranque
+        // ---------------------------------------------------------
+        cargarMetricas();
+        cargarCola();
+        cargarMensajesConsumir();
+        cargarEstadoConsumidor();
+        cargarDlq();
+        cargarHistorialEventos().finally(conectarSse);
+
+        setInterval(() => {
+            cargarMetricas();
+            cargarCola();
+            cargarMensajesConsumir();
+        }, 3000);
+
+        setInterval(cargarDlq, 5000);
     </script>
+
 </body>
 
 </html>
