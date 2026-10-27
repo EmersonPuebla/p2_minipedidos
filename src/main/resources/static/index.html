@@ -354,7 +354,7 @@
 
         <section class="acciones" aria-label="Acciones de RabbitMQ">
             <button type="button" id="btn-reconectar">Reconectar</button>
-            <a href="http://localhost:15672" target="_blank" rel="noreferrer">Panel RabbitMQ</a>
+            <a id="rabbitmq-panel-link" target="_blank" rel="noreferrer">Panel RabbitMQ</a>
         </section>
 
         <details class="status-log" id="estado-panel" open>
@@ -657,6 +657,15 @@
 
     <script>
         const $ = (id) => document.getElementById(id);
+
+        const hostname = window.location.hostname || "localhost";
+        const codespacesHostname = hostname.replace(
+            /-\d+\.app\.github\.dev$/,
+            "-15672.app.github.dev"
+        );
+        $("rabbitmq-panel-link").href = codespacesHostname !== hostname
+            ? `https://${codespacesHostname}`
+            : `http://${hostname}:15672`;
 
         const estadoResumen = $("estado-resumen");
         const estadoLog = $("estado-log");

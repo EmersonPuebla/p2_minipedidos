@@ -69,23 +69,3 @@ Boot 4, utilizaremos JacksonJsonMessageConverter en RabbitMQConfig.java, no Jack
 
 El siguiente paso es crear `docker-compose.yml` y levantar un único nodo 
 RabbitMQ, exactamente como funcionó en nuestro laboratorio original.
-
-# Adicionales
-
-## Hot reload
-añadir la dependencia en el `pom.xml`
-```bash
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-devtools</artifactId>
-    <optional>true</optional>
-</dependency>
-```
-configurar el `aplication.properties`
-```bash
-# Desactivar la caché de recursos estáticos
-spring.web.resources.cache.period=0
-
-# Desactivar la caché si utilizas motores de plantillas (Thymeleaf, Freemarker, etc.)
-spring.thymeleaf.cache=false
-```
